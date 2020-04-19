@@ -1,11 +1,10 @@
 #!/bin/bash
 
 cd
-sudo apt update -y
-sudo apt full-upgrade -y
-sudo apt install -y git make gcc
+sudo yum update -y
+sudo yum install -y git make gcc tmux
 git clone https://github.com/hashcat/hashcat.git
 cd hashcat
-make
+make -j 4
 sudo make install
 cd

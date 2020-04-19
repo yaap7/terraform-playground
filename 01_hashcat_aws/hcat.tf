@@ -33,28 +33,16 @@ resource "aws_key_pair" "master" {
   public_key = tls_private_key.ssh.public_key_openssh
 }
 
-data "aws_ami" "ubuntu" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
-  }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
-  }
-
-  owners = ["099720109477"] # Canonical
-}
-
 resource "aws_instance" "hcat" {
   tags = {
     Name = "${var.instance_name}"
   }
 
-  ami           = data.aws_ami.ubuntu.id
+  # the AMI is no more dynamic because we need the image
+  # containing nVidia driver for Tesla graphic cards
+  # Note: I had to subscribe to the following AMI in AWS marketplace to be able to use it:
+  # https://aws.amazon.com/marketplace/pp/B07S5G9S1Z?qid=1587305192635&sr=0-5&ref_=srh_res_product_title
+  ami           = "ami-0954816923dc67010"
   instance_type = var.instance_type
 
   key_name                    = aws_key_pair.master.key_name
@@ -62,18 +50,23 @@ resource "aws_instance" "hcat" {
   security_groups             = [aws_security_group.only_ssh.name]
 
   connection {
-    host        = aws_instance.hcat.public_ip
+    host        = self.public_ip
     type        = "ssh"
-    user        = "ubuntu"
+    user        = "ec2-user"
     private_key = tls_private_key.ssh.private_key_pem
   }
 
   provisioner "file" {
     source      = var.hash_file
-    destination = "/home/ubuntu/target_hashes.txt"
+    destination = "/home/ec2-user/target_hashes.txt"
   }
 
   provisioner "remote-exec" {
     script = "install-hashcat.sh"
   }
+
+  provisioner "remote-exec" {
+    inline = ["tmux new -d -s hcat 'hashcat -w 4 -O -m ${var.hash_type} -a 3 --increment /home/ec2-user/target_hashes.txt ; read'"]
+  }
+
 }
