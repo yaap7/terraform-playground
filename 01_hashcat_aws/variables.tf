@@ -5,13 +5,13 @@ variable "aws_region" {
 }
 
 variable "instance_type" {
-  description = "The Name tag to set for the EC2 Instance."
+  description = "The type of instance to use on EC2."
   type        = string
   default     = "p2.xlarge"
 }
 
 variable "instance_name" {
-  description = "The Name tag to set for the EC2 Instance."
+  description = "The name tag to set for the EC2 instance."
   type        = string
   default     = "hcat"
 }
